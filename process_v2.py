@@ -6,6 +6,7 @@ import rdflib
 import numpy as np
 import csv
 import process_v3
+import process_v4
 
 WD = Namespace('http://www.wikidata.org/entity/')
 WDT = Namespace('http://www.wikidata.org/prop/direct/')
@@ -32,20 +33,26 @@ ent2lbl = {ent: str(lbl) for ent, lbl in graph.subject_objects(RDFS.label)}
 lbl2ent = {lbl: ent for ent, lbl in ent2lbl.items()}
 
 def handleQuestion(question) -> (str, str):    # Classify the question types
+    multi_medias = ["picture", "look like", "looks like", "photo"]
+
     if "recommend" in question.lower(): # Recommendation question
         result = process_v3.handleRecommendation(question)
         return "recommendation", result
-
-    matched_entity = match_entity(question)
-    matched_relation = match_relation(question)
-
-    result = handleFactual(matched_entity, matched_relation)  # Factual question
-    if result:  
-        return "factual", result
+    elif any(multi_media in question.lower() for multi_media in multi_medias): # Multi-media question
+        result = process_v4.handleMultiMedia(question)
+        return "multi_media", result
     else:
-        result = handleEmbedding(matched_entity, matched_relation)  # Embedding question
+        matched_entity = match_entity(question)
+        matched_relation = match_relation(question)
+
+        result = handleFactual(matched_entity, matched_relation)  # Factual question
         if result:  
-            return "embedding", result
+            return "factual", result
+        else:
+            result = handleEmbedding(matched_entity, matched_relation)  # Embedding question
+            if result:  
+                return "embedding", result
+    
     return None, None
 
 def handleFactual(entity, relation):
