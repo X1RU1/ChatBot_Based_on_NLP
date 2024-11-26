@@ -1,5 +1,4 @@
 from transformers import pipeline
-import process_v2
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -21,8 +20,9 @@ X = vectorizer.fit_transform(df['combined_features'])
 knn = NearestNeighbors(n_neighbors=5, metric='cosine')
 knn.fit(X)
 
+ner_pipeline = pipeline('ner', model='dbmdz/bert-large-cased-finetuned-conll03-english')
+
 def handleRecommendation(question):
-    ner_pipeline = pipeline('ner', model='dbmdz/bert-large-cased-finetuned-conll03-english')
     entities = ner_pipeline(question, aggregation_strategy="simple")
 
     # Extract movie names (entities) from NER
