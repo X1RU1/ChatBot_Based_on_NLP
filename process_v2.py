@@ -7,6 +7,7 @@ import numpy as np
 import csv
 import process_v3
 import process_v4
+import process_v5
 
 WD = Namespace('http://www.wikidata.org/entity/')
 WDT = Namespace('http://www.wikidata.org/prop/direct/')
@@ -60,14 +61,18 @@ def handleQuestion(question) -> (str, str):
         matched_entity = match_entity(question)
         matched_relation = match_relation(question)
 
-        result = handleFactual(matched_entity, matched_relation)  # Factual question
-        if result:  
-            return "factual", result
+        result = process_v5.handleCrowdSourcing(matched_entity, matched_relation)    # Crowd-sourcing question
+        if result:
+            return "crowd_sourcing", result
         else:
-            result = handleEmbedding(matched_entity, matched_relation)  # Embedding question
+            result = handleFactual(matched_entity, matched_relation)  # Factual question
             if result:  
-                return "embedding", result
-                
+                return "factual", result
+            else:
+                result = handleEmbedding(matched_entity, matched_relation)  # Embedding question
+                if result:  
+                    return "embedding", result
+        
     return None, None
 
 
@@ -81,7 +86,8 @@ def match_entity(question):
         r"who is the (.+?) of (.+?)\?",
         r"who (.+?)ed (.+?)\?",
         r"when was \"(.+?)\" (.+?)d\?",
-        r"what is the (.+?) of (.+?)\?"
+        r"what is the (.+?) of (.+?)\?",
+        r"can you tell me the (.+?) of (.+?)\?"
     ]
     for pattern in patterns:
         match = re.search(pattern, question.lower())
@@ -123,10 +129,11 @@ def match_relation(question):
     # Extract the potential relation from the question
     relation_part = None
     patterns = [
-        r"who is the (.+?) of",      
+        r"who is the (.+?) of\b",      
         r"who (.+?)ed (.+?)\?",      
         r"when was \"(.+?)\" (.+?)d\?",
-        r"what is the (.+?) of"  
+        r"what is the (.+?) of\b",  # Ensure "of" is treated as a word
+        r"can you tell me the (.+?) of\b"
     ]
     for pattern in patterns:
         match = re.search(pattern, question.lower())
@@ -183,7 +190,7 @@ def handleEmbedding(entity, relation):
     relation_id = rel2id.get(rdflib.term.URIRef(relation))
 
     if entity_id is None or relation_id is None:
-        raise ValueError("Entity or Relation not found in embeddings.")
+        return None
 
     head = entity_emb[entity_id]
     pred = relation_emb[relation_id]
