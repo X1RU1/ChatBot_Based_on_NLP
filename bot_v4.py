@@ -46,6 +46,8 @@ class Agent:
                             response = "Adequate recommendations will be " + result + "."
                         elif questionType == "multi_media": # Multi-media question
                             response = f"image:{result}"
+                        elif questionType == "crowd_sourcing":  # Crowd-sourcing question
+                            response = result
                         else:
                             response = "No result found."
 
