@@ -37,6 +37,11 @@ class Agent:
                     # Implement your agent here #
                     try:
                         query = message.message
+                        
+                        multi_medias = ["picture", "look like", "looks like", "photo"]
+                        if any(multi_media in query.lower() for multi_media in multi_medias):
+                            room.post_messages("Processing your request, please wait about 30 seconds...")
+
                         questionType, result = process_v2.handleQuestion(query) 
                         if questionType == "factual":   # Factual question
                             response = self.format_results(result)
